@@ -146,6 +146,12 @@ In custom.html:
 
 L<Dotiac::DTL>, L<Text::Caml>, L<Template::Toolkit>
 
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2012, David Chester
+
+This module is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
 =cut
 
 __DATA__

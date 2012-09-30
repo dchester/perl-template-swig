@@ -71,3 +71,10 @@ In custom.html:
 ### See Also
 
 [Dotiac::DTL](http://search.cpan.org/perldoc?Dotiac::DTL), [Text::Caml](http://search.cpan.org/perldoc?Text::Caml), [Template::Toolkit](http://search.cpan.org/perldoc?Template::Toolkit)
+
+### Copyright and License
+
+Copyright (c) 2012, David Chester
+
+This module is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
