@@ -94,9 +94,9 @@ Template::Swig - Perl interface to Django-inspired Swig templating engine.
 
 =head1 DESCRIPTION
 
-Template::Swig uses JavaScript::V8 and Paul Armstrong's Swig templating engine to provide fast Django-inspired templating in a Perl context.  Templates are compiled to JavaScript functions and stored in memory, then executed each time they're rendered.
+Template::Swig uses L<JavaScript::V8> and L<Paul Armstrong's Swig|https://github.com/paularmstrong/swig/> templating engine to provide fast Django-inspired templating in a Perl context.  Templates are compiled to JavaScript functions and stored in memory, then executed each time they're rendered.
 
-Swig's feature list includes multiple inheritance, formatter and helper functions, macros, auto-escaping, and custom tags.  See the Swig Documentation for more.
+Swig's feature list includes multiple inheritance, formatter and helper functions, macros, auto-escaping, and custom tags.  See the L<Swig Documentation|https://github.com/paularmstrong/swig/blob/master/docs/README.md> for more.
 
 =head1 METHODS
 
@@ -126,15 +126,15 @@ Custom helpers / filters:
 
   {{ created|date('r') }}
 
-Inheritance:
+=head3 Inheritance:
 
-  // main.html
+In main.html:
   
   {% block 'greeting' %}
       Hi, there.
   {% endblock %}
   
-  // custom.html
+In custom.html:
   
   {% extends 'main.html' %}
   
