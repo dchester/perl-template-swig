@@ -34,8 +34,14 @@ sub _load_swig {
 	my ($self) = @_;
 
 	if ( my $cb = $self->{extends_callback} ) {
-		$self->{context}->eval(q{var load_from_perl = true;});
-		$self->{context}->bind_function(perl_callback => sub {
+		$self->{context}->eval(<<EOT);
+			var fs = {
+				readFileSync: function(file, encoding){
+					return perl_callback(file, encoding);
+				}
+			};
+EOT
+		$self->{context}->bind_function('perl_callback' => sub {
 			my ($filename, $encoding) = @_;
 			my $template;
 			my $error = do {
@@ -1430,8 +1436,6 @@ function createTemplate(data, id) {
     var template = {
             // Allows us to include templates from the compiled code
             compileFile: exports.compileFile,
-            // This is a callback to allow perl to handle the extends file loading
-            perlcompileFile: exports.perlcompileFile,
             // These are the blocks inside the template
             blocks: {},
             // Distinguish from other tokens
@@ -1515,39 +1519,6 @@ exports.compileFile = function (filepath) {
     get = function () {
         var file = ((/^\//).test(filepath) || (/^.:/).test(filepath)) ? filepath : _config.root + '/' + filepath,
             data = fs.readFileSync(file, config.encoding);
-        tpl = getTemplate(data, { filename: filepath });
-    };
-
-    if (_config.allowErrors) {
-        get();
-    } else {
-        try {
-            get();
-        } catch (error) {
-            tpl = new TemplateError(error);
-        }
-    }
-    return tpl;
-};
-
-exports.perlcompileFile = function (filepath, data) {
-    var tpl, get;
-
-    if (filepath[0] === '/') {
-        filepath = filepath.substr(1);
-    }
-
-    if (_config.cache && CACHE.hasOwnProperty(filepath)) {
-        return CACHE[filepath];
-    }
-
-    if (typeof window !== 'undefined') {
-        throw new TemplateError({ stack: 'You must pre-compile all templates in-browser. Use `swig.compile(template);`.' });
-    }
-
-    get = function () {
-        var file = ((/^\//).test(filepath) || (/^.:/).test(filepath)) ? filepath : _config.root + '/' + filepath,
-            data = perl_callback(file, config.encoding);
         tpl = getTemplate(data, { filename: filepath });
     };
 
@@ -2789,8 +2760,8 @@ exports.compile = function compile(indent, parentBlock, context) {
                     if (index > 0) {
                         throw new Error('Extends tag must be the first tag in the template, but "extends" found on line ' + token.line + '.');
                     }
-                    token.template = typeof load_from_perl !== "undefined" && load_from_perl == true ?
-                                     this.perlcompileFile(filepath.replace(/['"]/g,'')) : this.compileFile(filepath.replace(/['"]/g, ''));
+                    token.template = this.compileFile(filepath.replace(/['"]/g, ''));
+
                     this.parent = token.template;
 
                 } else if (token.name === 'block') { // Make a list of blocks
