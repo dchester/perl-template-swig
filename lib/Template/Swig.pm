@@ -7,15 +7,20 @@ use Carp;
 
 our $VERSION = '0.01';
 
+use File::Slurp qw(read_file);
 use JavaScript::V8;
 use JSON::XS;
 
 sub new {
 
-	my $self = bless {};
+	my ($class, %params) = @_;
+
+	my $self = bless {}, $class;
 
 	$self->{context} = JavaScript::V8::Context->new();
 	$self->{json} = JSON::XS->new->allow_nonref;
+	$self->{extends_callback} = $params{extends_callback};
+	$self->{template_dir} = $params{template_dir};
 
 	$self->{template_names} = {};
 
@@ -28,11 +33,42 @@ sub _load_swig {
 
 	my ($self) = @_;
 
+	if ( my $cb = $self->{extends_callback} ) {
+		$self->{context}->eval(q{var load_from_perl = true;});
+		$self->{context}->bind_function(perl_callback => sub {
+			my ($filename, $encoding) = @_;
+			my $template;
+			my $error = do {
+				local $@;
+				eval {
+					$filename = join('/',$self->{template_dir}, $filename) if $self->{template_dir};
+					$template = $cb->($filename, $encoding);
+				};
+				$@;
+			};
+			carp $error if $error;
+			return $template;
+		});
+	}
+
 	local $/ = undef;
 	my $swig_source = <DATA>;
 
 	$self->{context}->eval($swig_source);
 	confess $@ if $@;
+}
+
+sub compileFromFile {
+
+  my ($self, $filename) = @_;
+	my $template_name = $filename;
+	$filename = join('/',$self->{template_dir}, $filename) if $self->{template_dir};
+	if ( -e $filename ) {
+		my $template = read_file($filename);
+		$self->compile($template_name, $template);
+	} else {
+		die "Unable to locate $filename";
+	}
 }
 
 sub compile {
@@ -100,13 +136,27 @@ Swig's feature list includes multiple inheritance, formatter and helper function
 
 =head1 METHODS
 
-=head2 new
+=head2 new( template_dir => $path, extends_callback => sub { })
 
 Initialize a swig instance.
+
+=head3 template_dir
+
+This is a path of where templates live.
+
+=head3 extends_callback
+
+If this exists then when Swig encounters an extends tag it will pass the filename and it's encoding
+into this callback.
 
 =head2 compile($template_name, $swig_source)
 
 Compile a template given, given a template name and swig template source as a string.
+
+=head2 compile($file_name)
+
+Will compile a file from the file system. In order for this to work an extends_callback,
+needs to be implemented.
 
 =head2 render($template_name, $data)
 
@@ -1380,6 +1430,8 @@ function createTemplate(data, id) {
     var template = {
             // Allows us to include templates from the compiled code
             compileFile: exports.compileFile,
+            // This is a callback to allow perl to handle the extends file loading
+            perlcompileFile: exports.perlcompileFile,
             // These are the blocks inside the template
             blocks: {},
             // Distinguish from other tokens
@@ -1463,6 +1515,39 @@ exports.compileFile = function (filepath) {
     get = function () {
         var file = ((/^\//).test(filepath) || (/^.:/).test(filepath)) ? filepath : _config.root + '/' + filepath,
             data = fs.readFileSync(file, config.encoding);
+        tpl = getTemplate(data, { filename: filepath });
+    };
+
+    if (_config.allowErrors) {
+        get();
+    } else {
+        try {
+            get();
+        } catch (error) {
+            tpl = new TemplateError(error);
+        }
+    }
+    return tpl;
+};
+
+exports.perlcompileFile = function (filepath, data) {
+    var tpl, get;
+
+    if (filepath[0] === '/') {
+        filepath = filepath.substr(1);
+    }
+
+    if (_config.cache && CACHE.hasOwnProperty(filepath)) {
+        return CACHE[filepath];
+    }
+
+    if (typeof window !== 'undefined') {
+        throw new TemplateError({ stack: 'You must pre-compile all templates in-browser. Use `swig.compile(template);`.' });
+    }
+
+    get = function () {
+        var file = ((/^\//).test(filepath) || (/^.:/).test(filepath)) ? filepath : _config.root + '/' + filepath,
+            data = perl_callback(file, config.encoding);
         tpl = getTemplate(data, { filename: filepath });
     };
 
@@ -2704,7 +2789,8 @@ exports.compile = function compile(indent, parentBlock, context) {
                     if (index > 0) {
                         throw new Error('Extends tag must be the first tag in the template, but "extends" found on line ' + token.line + '.');
                     }
-                    token.template = this.compileFile(filepath.replace(/['"]/g, ''));
+                    token.template = typeof load_from_perl !== "undefined" && load_from_perl == true ?
+                                     this.perlcompileFile(filepath.replace(/['"]/g,'')) : this.compileFile(filepath.replace(/['"]/g, ''));
                     this.parent = token.template;
 
                 } else if (token.name === 'block') { // Make a list of blocks

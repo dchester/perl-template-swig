@@ -13,7 +13,9 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     PREREQ_PM => {
+        'Test::Exception' => 0,
         'Test::More'      => 0,
+	'File::Slurp'     => 0,
 	'JSON::XS'        => 0,
 	'Test::Exception' => 0,
 	'JavaScript::V8'  => 0
