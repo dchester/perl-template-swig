@@ -19,9 +19,17 @@ Swig's feature list includes multiple inheritance, formatter and helper function
 
 ### Methods
 
-#### new
+#### new( template_dir => $path, extends_callback => sub { } )
 
-Initialize a swig instance.
+Initialize a swig instance, given the follwing parameters:
+
+> ###### template_dir
+>
+> Optional path where templates live
+>
+> ###### extends_callback
+>
+> Optional callback to be run when Swig encounters an `extends` tag; receives filename and its encoding as parameters
 
 #### compile($template\_name, $swig\_source)
 

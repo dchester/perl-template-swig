@@ -20,6 +20,11 @@ WriteMakefile(
 	'Test::Exception' => 0,
 	'JavaScript::V8'  => 0
     },
+    META_MERGE => {
+        resources => {
+            repository => 'https://github.com/dchester/perl-template-swig'
+        }
+    },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Template-Swig-*' },
 );

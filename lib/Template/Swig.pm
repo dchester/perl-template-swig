@@ -5,7 +5,7 @@ use warnings;
 
 use Carp;
 
-our $VERSION = '0.01';
+our $VERSION = '0.03';
 
 use File::Slurp qw(read_file);
 use JavaScript::V8;
@@ -142,18 +142,17 @@ Swig's feature list includes multiple inheritance, formatter and helper function
 
 =head1 METHODS
 
-=head2 new( template_dir => $path, extends_callback => sub { })
+=head2 new( template_dir => $path, extends_callback => sub { } )
 
-Initialize a swig instance.
+Initialize a swig instance, given the following parameters
 
 =head3 template_dir
 
-This is a path of where templates live.
+Optional path where templates live
 
 =head3 extends_callback
 
-If this exists then when Swig encounters an extends tag it will pass the filename and it's encoding
-into this callback.
+Optional callback to be run when Swig encounters an extends tag; receives filename and its encoding as parameters
 
 =head2 compile($template_name, $swig_source)
 
