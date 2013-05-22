@@ -41,7 +41,7 @@ sub _load_swig {
 				}
 			};
 EOT
-		$self->{context}->bind_function('perl_callback' => sub {
+		$self->{context}->bind('perl_callback' => sub {
 			my ($filename, $encoding) = @_;
 			my $template;
 			my $error = do {
