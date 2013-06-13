@@ -34,14 +34,79 @@ $swig = Template::Swig->new(
 	template_dir => './t',
 );
 
-dies_ok { $swig->compileFromFile('/unkown/path/template.t') } "compileFromFile will die if an invalid template is passed";
-lives_ok { $swig->compileFromFile('page.html') } "compileFromFile will live if a template is found";
+# Testing standard callback with inheritance
+{
+	dies_ok { $swig->compileFromFile('/unkown/path/template.t') } "compileFromFile will die if an invalid template is passed";
+	lives_ok { $swig->compileFromFile('page.html') } "compileFromFile will live if a template is found";
+	
+	$output = $swig->render('page.html');
+	$output = trim_whitespace($output);
+	$expected_output = trim_whitespace($expected_output);
+	
+	is($output, $expected_output, 'rendered output matches what we expect');
+}
 
-$output = $swig->render('page.html');
-$output = trim_whitespace($output);
-$expected_output = trim_whitespace($expected_output);
-
-is($output, $expected_output, 'rendered output matches what we expect');
+# Testing standard callback with inheritance and check cache store sanity
+{
+	my ($locale, $en_us_output, $en_ca_output);
+	my @cache_keys;
+	$swig->{context}->bind_function('cache_inspect' => sub { 
+		my $cache = shift;
+		push @cache_keys, [ sort keys %$cache ];
+	});
+	confess $@ if $@;
+	
+	$locale = 'en_US';
+	$expected_output = trim_whitespace(<<EOT);
+<!doctype html>
+<head>
+	<title>Custom Title!</title>
+</head>
+<body>
+	custom content too!
+	$locale
+</body>
+EOT
+	lives_ok { $swig->compileFromFile({ filename => 'page.html', locale => $locale }) } "compileFromFile with a data structure with a key of filename will live";
+	my $en_us_output = trim_whitespace($swig->render({ filename => 'page.html', locale => $locale }, {locale => $locale} ));
+	is($en_us_output, $expected_output, 'rendered output matches what we expect');
+	
+	$swig->{context}->eval(q~cache_inspect(templates)~);
+	confess $@ if $@;
+	is_deeply \@cache_keys,
+		[ [ 'page.html', '{"filename":"page.html","locale":"en_US"}' ] ],
+		"the cache store shoudl just contain the entries we expect";
+	@cache_keys = ();
+	
+	$locale = 'en_CA';
+	$expected_output = trim_whitespace(<<EOT);
+<!doctype html>
+<head>
+	<title>Custom Title!</title>
+</head>
+<body>
+	custom content too!
+	$locale
+</body>
+EOT
+	lives_ok { $swig->compileFromFile({ filename => 'page.html', locale => $locale }) } "compileFromFile with a data structure with a key of filename will live";
+	$en_ca_output = trim_whitespace($swig->render({ filename => 'page.html', locale => $locale }, {locale => $locale} ));
+	is($en_ca_output, $expected_output, 'rendered output matches what we expect');
+	
+	$swig->{context}->eval(q~cache_inspect(templates)~);
+	is_deeply \@cache_keys, 
+		[ [ 'page.html', '{"filename":"page.html","locale":"en_CA"}', '{"filename":"page.html","locale":"en_US"}' ] ],
+		"the cache store should just contain the entries we expect";
+	@cache_keys = ();
+	
+	lives_ok { $swig->compileFromFile({ filename => 'page.html', locale => $locale }) } "compileFromFile with a data structure with a key of filename will live";
+	$en_ca_output = trim_whitespace($swig->render({ filename => 'page.html', locale => $locale }, {locale => $locale} ));
+	is($en_ca_output, $expected_output, 'rendered output matches what we expect');
+	
+	$swig->{context}->eval(q~cache_inspect(templates)~);
+	is_deeply \@cache_keys, [ [ 'page.html', '{"filename":"page.html","locale":"en_CA"}', '{"filename":"page.html","locale":"en_US"}' ] ], "the cache store should not have any new entries";
+	@cache_keys = ();
+}
 
 done_testing;
 
