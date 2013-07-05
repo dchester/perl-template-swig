@@ -131,7 +131,7 @@ Template::Swig - Perl interface to Django-inspired Swig templating engine.
 
   my $swig = Template::Swig->new;
 
-  $swig->compile('Welcome, {{name}}', 'message');
+  $swig->compile('message', 'Welcome, {{name}}');
   my $output = $swig->render('message', { name => 'Arthur' });
 
 =head1 DESCRIPTION
