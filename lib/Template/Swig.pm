@@ -5,7 +5,7 @@ use warnings;
 
 use Carp;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use File::Slurp qw(read_file);
 use JavaScript::V8;
