@@ -41,7 +41,7 @@ sub _load_swig {
 				}
 			};
 EOT
-		$self->{context}->bind('perl_callback' => sub {
+		$self->{context}->bind_function('perl_callback' => sub {
 			my ($filename, $encoding) = @_;
 			my $template;
 			my $error = do {
@@ -66,12 +66,12 @@ EOT
 
 sub compileFromFile {
 
-  my ($self, $filename) = @_;
-	my $template_name = $filename;
+	my ($self, $f) = @_;
+	my $filename = ref($f) ? $f->{filename} : $f;
 	$filename = join('/',$self->{template_dir}, $filename) if $self->{template_dir};
 	if ( -e $filename ) {
 		my $template = read_file($filename);
-		$self->compile($template_name, $template);
+		$self->compile($f, $template);
 	} else {
 		die "Unable to locate $filename";
 	}
@@ -87,6 +87,11 @@ sub compile {
 	die "need a template_name" unless $template_name;
 	my $template_name_json = $self->{json}->encode($template_name);
 
+	if (ref $template_name) {
+		$template_name_json =~ s/'/\\'/g;
+		$template_name_json = "'$template_name_json'";
+	}
+
 	$self->{context}->eval(<<EOT);
 	var template_string = $template_string_json;
 	var template = swig.compile(template_string, { filename: $template_name_json });
@@ -96,17 +101,21 @@ sub compile {
 EOT
 	confess $@ if $@;
 
-	$self->{$template_name} = 1;
+	$self->{is_compiled}{$template_name_json} = 1;
 }
 
 sub render {
 
-	my ($self, $template_name, $data, %args) = @_;
+	my ($self, $template_name, $data) = @_;
 
 	die "need a template_name" unless $template_name;
 	my $template_name_json = $self->{json}->encode($template_name);
+	if (ref $template_name) {
+		$template_name_json =~ s/'/\\'/g;
+		$template_name_json = "'$template_name_json'";
+	}
 
-	die "couldn't find template: $template_name" unless $self->{$template_name};
+	die "couldn't find template: $template_name" unless $self->{is_compiled}{$template_name_json};
 
 	my $data_json = $self->{json}->encode($data);
 
@@ -138,7 +147,7 @@ Template::Swig - Perl interface to Django-inspired Swig templating engine.
 
 Template::Swig uses L<JavaScript::V8> and L<Paul Armstrong's Swig|https://github.com/paularmstrong/swig/> templating engine to provide fast Django-inspired templating in a Perl context.  Templates are compiled to JavaScript functions and stored in memory, then executed each time they're rendered.
 
-Swig's feature list includes multiple inheritance, formatter and helper functions, macros, auto-escaping, and custom tags.  See the L<Swig Documentation|https://github.com/paularmstrong/swig/blob/master/README.md> for more.
+Swig's feature list includes multiple inheritance, formatter and helper functions, macros, auto-escaping, and custom tags.  See the L<Swig Documentation|https://github.com/paularmstrong/swig/blob/master/docs/README.md> for more.
 
 =head1 METHODS
 
