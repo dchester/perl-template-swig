@@ -6,4 +6,7 @@
 
 {% block content %}
 	custom content too!
+  {% if locale %}
+    {{ locale }}
+  {% endif %}
 {% endblock %}
