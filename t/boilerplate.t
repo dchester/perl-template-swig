@@ -37,10 +37,5 @@ sub module_boilerplate_ok {
     );
 }
 
-TODO: {
-  local $TODO = "Need to replace the boilerplate text";
-
-  module_boilerplate_ok('lib/Template/Swig.pm');
-
-}
+module_boilerplate_ok('lib/Template/Swig.pm');
 

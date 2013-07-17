@@ -5,7 +5,7 @@ use warnings;
 
 use Carp;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use File::Slurp qw(read_file);
 use JavaScript::V8;
@@ -19,6 +19,7 @@ sub new {
 
 	$self->{context} = JavaScript::V8::Context->new();
 	$self->{json} = JSON::XS->new->allow_nonref;
+	$self->{json}->canonical(1); # Make sure that a given struct is always encoded the same way
 	$self->{extends_callback} = $params{extends_callback};
 	$self->{template_dir} = $params{template_dir};
 
@@ -41,7 +42,7 @@ sub _load_swig {
 				}
 			};
 EOT
-		$self->{context}->bind_function('perl_callback' => sub {
+		$self->{context}->bind('perl_callback' => sub {
 			my ($filename, $encoding) = @_;
 			my $template;
 			my $error = do {
@@ -140,14 +141,19 @@ Template::Swig - Perl interface to Django-inspired Swig templating engine.
 
   my $swig = Template::Swig->new;
 
+  # Compile and render an inline template:
   $swig->compile('message', 'Welcome, {{name}}');
   my $output = $swig->render('message', { name => 'Arthur' });
+
+  # Compile and render a file:
+  $swig->compileFromFile('path/to/file.html');
+  my $output = $swig->render('path/to/file.html', { some_param => 'foo' });
 
 =head1 DESCRIPTION
 
 Template::Swig uses L<JavaScript::V8> and L<Paul Armstrong's Swig|https://github.com/paularmstrong/swig/> templating engine to provide fast Django-inspired templating in a Perl context.  Templates are compiled to JavaScript functions and stored in memory, then executed each time they're rendered.
 
-Swig's feature list includes multiple inheritance, formatter and helper functions, macros, auto-escaping, and custom tags.  See the L<Swig Documentation|https://github.com/paularmstrong/swig/blob/master/docs/README.md> for more.
+Swig's feature list includes multiple inheritance, formatter and helper functions, macros, auto-escaping, and custom tags.  See the L<Swig Documentation|https://github.com/paularmstrong/swig/blob/master/README.md> for more.
 
 =head1 METHODS
 
@@ -167,10 +173,14 @@ Optional callback to be run when Swig encounters an extends tag; receives filena
 
 Compile a template given, given a template name and swig template source as a string.
 
-=head2 compile($file_name)
+=head2 compileFromFile($f)
 
-Will compile a file from the file system. In order for this to work an extends_callback,
-needs to be implemented.
+Will compile a file from the filesystem. C<$f> may be either a scalar filename,
+or a reference to a hash with at least one key, C<filename>.
+
+=head2 compile($string)
+
+Will compile data supplied in the scalar C<$string>.
 
 =head2 render($template_name, $data)
 

@@ -7,8 +7,13 @@ Perl interface to Django-inspired Swig templating engine.
 ```perl
 my $swig = Template::Swig->new;
 
+# Compile and render an inline template:
 $swig->compile('message', 'Welcome, {{name}}');
 my $output = $swig->render('message', { name => 'Arthur' });
+
+# Compile and render a file:
+$swig->compileFromFile('path/to/file.html');
+my $output = $swig->render('path/to/file.html', { some_param => 'foo' });
 ```
 
 ### Description
