@@ -58,8 +58,10 @@ EOT
 		});
 	}
 
+	my $start_pos = tell DATA;
 	local $/ = undef;
 	my $swig_source = <DATA>;
+	seek DATA, $start_pos, 0;
 
 	$self->{context}->eval($swig_source);
 	confess $@ if $@;
