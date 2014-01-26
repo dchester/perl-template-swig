@@ -33,4 +33,16 @@ EOT
 
 is($output, $expected_output, 'rendered output matches what we expect');
 
+my $swig2 = Template::Swig->new;
+my $template2 = <<EOT;
+{% if flag1 %}Flag 1{% endif -%}
+{% if flag2 %}Flag 2{% endif %}
+EOT
+
+$swig2->compile('flags.html', $template2);
+$output = $swig2->render('flags.html', { flag1 => 0, flag2 => 1 });
+
+$expected_output = 'Flag 2';
+is($output, $expected_output, 'rendered output matches what we expect');
+
 done_testing;
