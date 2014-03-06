@@ -18,7 +18,7 @@ sub new {
 	my $self = bless {}, $class;
 
 	$self->{context} = JavaScript::V8::Context->new();
-	$self->{json} = JSON::XS->new->allow_nonref;
+	$self->{json} = JSON::XS->new->allow_nonref->allow_blessed;
 	$self->{json}->canonical(1); # Make sure that a given struct is always encoded the same way
 	$self->{extends_callback} = $params{extends_callback};
 	$self->{template_dir} = $params{template_dir};
